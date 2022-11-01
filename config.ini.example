@@ -1,0 +1,14 @@
+[PUSHOVER]
+; Get push notifications via https://pushover.net/ (optional)
+USE_PUSHOVER = False
+PUSH_TOKEN = 
+PUSH_USER = 
+
+[PUSHBULLET]
+USE_PUSHBULLET = True
+PUSHBULLET_TOKEN = 
+
+[SENDGRID]
+; Get email notifications via https://sendgrid.com/ (optional)
+USE_SENDGRID = False
+SENDGRID_API_KEY =

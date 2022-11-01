@@ -1,0 +1,3 @@
+[Desktop Entry]
+Name=IPUpdater
+Exec=/usr/bin/bash /home/raspberry/Desktop/ip/autostart.sh
