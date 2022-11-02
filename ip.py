@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
 
+import sys
 import time
+import traceback
 import requests
 import configparser
+import validators
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -20,27 +24,30 @@ REQUESTS_COOLDOWN = 10 * 60 # 10 Minutes
 
 
 def init_config():
-	global REQUESTS_COOLDOWN, USE_SENDGRID, SENDGRID_API_KEY, USE_PUSHOVER, PUSH_TOKEN, PUSH_USER, USE_PUSHBULLET, PUSHBULLET_TOKEN
-	config = configparser.ConfigParser()
-	config.read('config.ini')
+    global REQUESTS_COOLDOWN, USE_SENDGRID, SENDGRID_API_KEY, USE_PUSHOVER, PUSH_TOKEN, PUSH_USER, USE_PUSHBULLET, PUSHBULLET_TOKEN
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    
+    try:
+        requests_cooldown = config.getint("SETTINGS", "REQUESTS_COOLDOWN")
+        REQUESTS_COOLDOWN = requests_cooldown
+    except (configparser.NoSectionError, KeyError):
+        pass
 
-	try:
-		requests_cooldown = config.getint("SETTINGS", "REQUESTS_COOLDOWN")
-		REQUESTS_COOLDOWN = requests_cooldown
-	except (configparser.NoSectionError, KeyError):
-		pass
-
-	USE_SENDGRID = config.getboolean("SENDGRID", "USE_SENDGRID")
-	SENDGRID_API_KEY = config.get("SENDGRID", "SENDGRID_API_KEY")
-	USE_PUSHOVER = config.getboolean("PUSHOVER", "USE_PUSHOVER")
-	PUSH_TOKEN = config.get("PUSHOVER", "PUSH_TOKEN")
-	PUSH_USER = config.get("PUSHOVER", "PUSH_USER")
-	USE_PUSHBULLET = config.getboolean("PUSHBULLET", "USE_PUSHBULLET")
-	PUSHBULLET_TOKEN = config.get("PUSHBULLET", "PUSHBULLET_TOKEN")
+    USE_SENDGRID = config.getboolean("SENDGRID", "USE_SENDGRID")
+    SENDGRID_API_KEY = config.get("SENDGRID", "SENDGRID_API_KEY")
+    USE_PUSHOVER = config.getboolean("PUSHOVER", "USE_PUSHOVER")
+    PUSH_TOKEN = config.get("PUSHOVER", "PUSH_TOKEN")
+    PUSH_USER = config.get("PUSHOVER", "PUSH_USER")
+    USE_PUSHBULLET = config.getboolean("PUSHBULLET", "USE_PUSHBULLET")
+    PUSHBULLET_TOKEN = config.get("PUSHBULLET", "PUSHBULLET_TOKEN")
 
 def get_ip():
-	ip = requests.get("https://api.ipify.org").content.decode("utf-8")
-	return str(ip)
+    ip = requests.get("https://api.ipify.org").content.decode("utf-8")
+    ip = str(ip)
+    if validators.ipv4(ip):
+        return ip
+    return None
 
 def send_notification(msg):
     print(f"Sending notification: {msg}")
@@ -72,25 +79,29 @@ def send_notification(msg):
         requests.post(url, data)
 
 def update_ip():
-	global IP
+    global IP
 
-	ip = get_ip()
-	if ip == "" or ip == None:
-		return
-
-	if ip == IP:
-		return
-
-	IP = ip
-	send_notification(f"New IP: {IP}")
+    try:
+        ip = get_ip()
+        if ip == "" or ip == None:
+            return
+        
+        if ip == IP:
+            return
+        
+        IP = ip
+        send_notification(f"New IP: {IP}")
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
 
 def main():
-	init_config()
+    init_config()
 
-	while True:
-		update_ip()
-		time.sleep(REQUESTS_COOLDOWN)
+    while True:
+        update_ip()
+        time.sleep(REQUESTS_COOLDOWN)
 
 if __name__ == "__main__":
-	main()
+    main()
 
